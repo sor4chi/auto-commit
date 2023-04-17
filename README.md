@@ -31,6 +31,9 @@ this script will work as git subcommand, so you can use it like this:
 
 ```bash
 git auto-commit
+
+# optional arguments
+git auto-commit ja # 日本語でコミットメッセージを作成
 ```
 
 ## License
