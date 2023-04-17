@@ -2,6 +2,17 @@
 
 This is a simple script that will automatically commit and push your changes to your git repository.
 
+## Dependencies
+
+- git
+- bash
+- curl
+- jq
+
+Mainly, "jq" is the only dependency that is not installed by default on most systems. so you need to install it first.
+
+https://stedolan.github.io/jq/
+
 ## Usage
 
 1. Clone this repository
