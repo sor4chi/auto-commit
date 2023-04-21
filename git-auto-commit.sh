@@ -1,60 +1,35 @@
 #!/bin/bash
 
-escape() {
-    text=$1
-    # replace backslashes with two backslashes
-    text=${text//\\/\\\\}
-    # replace double quotes with '\"'
-    text=${text//\"/\\\"}
-    # replace newlines with '\n'
-    text=${text//$'\n'/\\n}
-    echo "$text"
-}
-
 COMMIT_LINT_TYPES="build,ci,docs,feat,fix,perf,refactor,revert,style,test"
 COMMIT_LINT_FORMAT="<type>(<scope>): <subject>"
 
 jaPrompt() {
     cat <<-END
-あなたはエンジニアです。
-次の差分に対するコミットメッセージを考えてください。
+あなたは日本人のエンジニアです。
+これからGitの差分をお見せしますので、コミットメッセージを考えてください。
 条件:
-- 出力は、Commitlintに準拠した1行のテキストでなければなりません。複数行になる場合は、1行目のみを使用してください。
+- 出力は、Commitlintに準拠した1行のテキストでなければなりません。
 - 出力は、コミットメッセージのみで、他は何も出力する必要はありません。
 - コミットメッセージは、簡潔で説明的で、1文でなければなりません。
 - フォーマットは\`${COMMIT_LINT_FORMAT}\`でなければなりません。
 <type> は次のいずれかでなければなりません: ${COMMIT_LINT_TYPES}
 <scope> はオプションですが、含まれている場合は丸括弧で囲み、英語でなければなりません。
 <subject> は日本語でなければなりません。
-
-以下が差分になります。
-
-\`\`\`diff
-${diffString}
-\`\`\`
-
 END
 }
 
 enPrompt() {
     cat <<-END
 You are an engineer.
-Please think of a commit message for the following diff.
+I will show you the diff of Git, so please think about the commit message.
 Conditions:
-- The output must be a single line of text that complies with Commitlint. If it is multiple lines, only the first line is used.
+- The output must be a single line of text that complies with Commitlint.
 - The output must be only the commit message, and nothing else.
 - The commit message must be concise and descriptive, and must be a single sentence.
 - The format must be \`${COMMIT_LINT_FORMAT}\`.
 <type> must be one of: ${COMMIT_LINT_TYPES}
 <scope> is optional, but if included, it must be enclosed in parentheses and be in English.
 <subject> must be in English.
-
-Here is the diff.
-
-\`\`\`diff
-${diffString}
-\`\`\`
-
 END
 }
 
@@ -67,14 +42,17 @@ generateCommitMessage() {
     else
         prompt=$(enPrompt)
     fi
-    prompt=$(escape "${prompt}")
-    payload=$(echo "${prompt}" | jq -R . | jq -s '{messages: [{content: .[0], role: "user"}], model: "gpt-3.5-turbo"}')
+    prompt=$(echo ${prompt} | jq -R . | sed -e 's/^"//' -e 's/"$//')
+    diffString=$(echo ${diffString} | jq -R . | sed -e 's/^"//' -e 's/"$//')
+    payload='{"messages": [{"content": "'\`\`\`diff\\n${prompt}\\n\`\`\`'", "role": "system"},{"content": "'${diffString}'", "role": "user"}],"model": "gpt-3.5-turbo"}'
+    jsonPayload=$(echo "${payload}" | jq -c .)
     response=$(curl -s -X POST \
         -H "Authorization: Bearer ${openaiApiKey}" \
         -H "Content-Type: application/json" \
-        -d "${payload}" \
+        -d "${jsonPayload}" \
         "https://api.openai.com/v1/chat/completions")
     commitMessage=$(echo "$response" | jq -r '.choices[0].message.content')
+    commitMessage=$(echo "${commitMessage}" | head -n 1)
     echo "${commitMessage}"
 }
 
