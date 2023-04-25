@@ -100,7 +100,7 @@ main() {
     openaiApiKey=${OPENAI_API_KEY}
     if [ -z "${openaiApiKey}" ]; then
         echo "$(red Error:) No OpenAI API key found. Please set the OPENAI_API_KEY environment variable."
-        echo -e "$(green Hint:) EXPORT OPENAI_API_KEY=<your-api-key>"
+        echo -e "$(green Hint:) export OPENAI_API_KEY=<your-api-key>"
         return
     fi
     if [ -n "${diffString}" ]; then
